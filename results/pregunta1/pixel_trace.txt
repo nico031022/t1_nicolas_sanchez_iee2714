@@ -1,0 +1,21 @@
+PIXEL TRACE - PREGUNTA 1
+
+Coordenada (x, y): (2386, 2905)
+RGB original: [78, 98, 115]
+
+MODO HS
+H = 207.567568 grados
+S original = 0.321739
+V = 0.450980
+m(h) = 1.344595
+g_m(S) = 0.432609
+S final = 0.432609
+RGB final = [65, 92, 115]
+
+MODO LCh
+L* = 40.270782
+c* original = 14.934923
+h* = 254.710166 grados
+m(h*) = 1.186542
+g_m(c*) = 17.720920
+RGB final = [74, 99, 119]
