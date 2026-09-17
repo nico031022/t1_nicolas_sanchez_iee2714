@@ -307,3 +307,192 @@ def global_equalization_own(
     )
 
     return equalized_image
+
+
+def compute_region_weights(region):
+    region_height = (
+        region["bottom"]
+        - region["top"]
+    )
+
+    region_width = (
+        region["right"]
+        - region["left"]
+    )
+
+    local_y = np.arange(
+        region_height,
+        dtype=np.float64
+    )
+
+    local_x = np.arange(
+        region_width,
+        dtype=np.float64
+    )
+
+    center_y = (
+        region_height
+        - 1
+    ) / 2.0
+
+    center_x = (
+        region_width
+        - 1
+    ) / 2.0
+
+    half_height = (
+        region_height
+        / 2.0
+    )
+
+    half_width = (
+        region_width
+        / 2.0
+    )
+
+    # mas peso cerca del centro
+    weight_y = (
+        1.0
+        - np.abs(
+            local_y
+            - center_y
+        )
+        / half_height
+    )
+
+    weight_x = (
+        1.0
+        - np.abs(
+            local_x
+            - center_x
+        )
+        / half_width
+    )
+
+    weight_y = np.clip(
+        weight_y,
+        0.0,
+        1.0
+    )
+
+    weight_x = np.clip(
+        weight_x,
+        0.0,
+        1.0
+    )
+
+    region_weights = (
+        weight_y[:, None]
+        * weight_x[None, :]
+    )
+
+    return region_weights
+
+
+def local_histogram_equalization(
+    image_gray,
+    region_size,
+    region_step,
+    num_bins=256
+):
+    if image_gray.ndim != 2:
+        raise ValueError(
+            "image_gray debe ser una imagen 2D"
+        )
+
+    if image_gray.dtype != np.uint8:
+        raise ValueError(
+            "image_gray debe tener dtype uint8"
+        )
+
+    region_grid = build_region_grid(
+        image_shape=image_gray.shape,
+        region_size=region_size,
+        region_step=region_step
+    )
+
+    accumulated_values = np.zeros(
+        image_gray.shape,
+        dtype=np.float64
+    )
+
+    accumulated_weights = np.zeros(
+        image_gray.shape,
+        dtype=np.float64
+    )
+
+    for region in region_grid:
+
+        top = region["top"]
+        bottom = region["bottom"]
+        left = region["left"]
+        right = region["right"]
+
+        region_image = image_gray[
+            top:bottom,
+            left:right
+        ]
+
+        histogram, _ = (
+            compute_region_histogram(
+                region_image,
+                num_bins=num_bins
+            )
+        )
+
+        region_mapping = build_region_mapping(
+            histogram,
+            num_bins=num_bins
+        )
+
+        mapped_region = region_mapping[
+            region_image
+        ]
+
+        region_weights = (
+            compute_region_weights(
+                region
+            )
+        )
+
+        # acumular las regiones que se solapan
+        accumulated_values[
+            top:bottom,
+            left:right
+        ] += (
+            mapped_region
+            * region_weights
+        )
+
+        accumulated_weights[
+            top:bottom,
+            left:right
+        ] += region_weights
+
+    if np.any(
+        accumulated_weights <= 0
+    ):
+        raise RuntimeError(
+            "hay pixels sin peso acumulado"
+        )
+
+    output_image = (
+        accumulated_values
+        / accumulated_weights
+    )
+
+    output_image = np.rint(
+        output_image
+    )
+
+    output_image = np.clip(
+        output_image,
+        0,
+        255
+    )
+
+    output_image = output_image.astype(
+        np.uint8
+    )
+
+    return output_image
