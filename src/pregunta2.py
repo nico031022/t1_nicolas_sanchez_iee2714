@@ -1,3 +1,6 @@
+import numpy as np
+
+
 def build_region_positions(
     image_length,
     region_size,
@@ -130,3 +133,129 @@ def build_region_grid(
             region_number += 1
 
     return region_grid
+
+
+
+
+def compute_region_histogram(
+    region,
+    num_bins=256
+):
+    if num_bins <= 0:
+        raise ValueError(
+            "num_bins debe ser positivo"
+        )
+
+    histogram, bin_edges = np.histogram(
+        region,
+        bins=num_bins,
+        range=(0, 256)
+    )
+
+    return histogram, bin_edges
+
+
+def compute_region_cdf(histogram):
+    cdf = np.cumsum(
+        histogram
+    )
+
+    return cdf
+
+
+def find_cdf_min(cdf):
+    nonzero_values = cdf[
+        cdf > 0
+    ]
+
+    if len(nonzero_values) == 0:
+        return 0
+
+    cdf_min = nonzero_values[0]
+
+    return cdf_min
+
+
+def intensity_to_bin(
+    intensity,
+    num_bins
+):
+    bin_index = (
+        int(intensity)
+        * num_bins
+        // 256
+    )
+
+    bin_index = min(
+        bin_index,
+        num_bins - 1
+    )
+
+    return bin_index
+
+
+def build_region_mapping(
+    histogram,
+    num_bins
+):
+    cdf = compute_region_cdf(
+        histogram
+    )
+
+    num_pixels = int(
+        cdf[-1]
+    )
+
+    cdf_min = find_cdf_min(
+        cdf
+    )
+
+    mapping = np.arange(
+        256,
+        dtype=np.float64
+    )
+
+    # vacia
+    if num_pixels == 0:
+        return mapping
+
+    denominator = (
+        num_pixels
+        - cdf_min
+    )
+
+    # un bin ocupado no puede ecualizar
+    if denominator == 0:
+        return mapping
+
+    for intensity in range(256):
+
+        bin_index = intensity_to_bin(
+            intensity,
+            num_bins
+        )
+
+        cdf_value = cdf[
+            bin_index
+        ]
+
+        mapped_value = (
+            (
+                cdf_value
+                - cdf_min
+            )
+            / denominator
+            * 255.0
+        )
+
+        mapped_value = np.clip(
+            mapped_value,
+            0.0,
+            255.0
+        )
+
+        mapping[
+            intensity
+        ] = mapped_value
+
+    return mapping
