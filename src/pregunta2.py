@@ -259,3 +259,51 @@ def build_region_mapping(
         ] = mapped_value
 
     return mapping
+
+
+
+def apply_intensity_mapping(
+    image_gray,
+    mapping
+):
+    mapped_image = mapping[
+        image_gray
+    ]
+
+    mapped_image = np.rint(
+        mapped_image
+    )
+
+    mapped_image = np.clip(
+        mapped_image,
+        0,
+        255
+    )
+
+    mapped_image = mapped_image.astype(
+        np.uint8
+    )
+
+    return mapped_image
+
+
+def global_equalization_own(
+    image_gray,
+    num_bins=256
+):
+    histogram, _ = compute_region_histogram(
+        image_gray,
+        num_bins=num_bins
+    )
+
+    mapping = build_region_mapping(
+        histogram,
+        num_bins=num_bins
+    )
+
+    equalized_image = apply_intensity_mapping(
+        image_gray,
+        mapping
+    )
+
+    return equalized_image
