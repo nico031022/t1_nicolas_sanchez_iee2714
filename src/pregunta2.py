@@ -261,6 +261,39 @@ def build_region_mapping(
     return mapping
 
 
+def apply_contrast_control(
+    region_mapping,
+    contrast_strength
+):
+    if not 0.0 <= contrast_strength <= 1.0:
+        raise ValueError(
+            "contrast_strength debe estar entre 0 y 1"
+        )
+
+    identity_mapping = np.arange(
+        256,
+        dtype=np.float64
+    )
+
+    if contrast_strength == 0.0:
+        return identity_mapping
+
+    if contrast_strength == 1.0:
+        return region_mapping.copy()
+
+    # acercar el mapping a la identidad
+    controlled_mapping = (
+        identity_mapping
+        + contrast_strength
+        * (
+            region_mapping
+            - identity_mapping
+        )
+    )
+
+    return controlled_mapping
+
+
 
 def apply_intensity_mapping(
     image_gray,
@@ -393,7 +426,8 @@ def local_histogram_equalization(
     image_gray,
     region_size,
     region_step,
-    num_bins=256
+    num_bins=256,
+    contrast_strength=1.0
 ):
     if image_gray.ndim != 2:
         raise ValueError(
@@ -403,6 +437,11 @@ def local_histogram_equalization(
     if image_gray.dtype != np.uint8:
         raise ValueError(
             "image_gray debe tener dtype uint8"
+        )
+
+    if not 0.0 <= contrast_strength <= 1.0:
+        raise ValueError(
+            "contrast_strength debe estar entre 0 y 1"
         )
 
     region_grid = build_region_grid(
@@ -445,7 +484,14 @@ def local_histogram_equalization(
             num_bins=num_bins
         )
 
-        mapped_region = region_mapping[
+        controlled_mapping = (
+            apply_contrast_control(
+                region_mapping,
+                contrast_strength
+            )
+        )
+
+        mapped_region = controlled_mapping[
             region_image
         ]
 
