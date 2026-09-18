@@ -102,35 +102,11 @@ def test_uniform_image():
     )
 
 
-def main():
-    project_directory = (
-        Path(__file__)
-        .resolve()
-        .parents[1]
-    )
-
-    image_path = (
-        project_directory
-        / "images"
-        / "propias"
-        / "fruit.jpg"
-    )
-
-    output_directory = (
-        project_directory
-        / "results"
-        / "pregunta2"
-        / "local_unlimited"
-    )
-
-    output_directory.mkdir(
-        parents=True,
-        exist_ok=True
-    )
-
-    test_region_weights()
-    test_uniform_image()
-
+def run_local_experiment(
+    image_path,
+    image_name,
+    output_directory
+):
     image_gray = cv2.imread(
         str(image_path),
         cv2.IMREAD_GRAYSCALE
@@ -143,8 +119,15 @@ def main():
 
     print()
     print("----------------------------------------")
-    print("Test de una sola region")
+    print(
+        f"Imagen: {image_name}"
+    )
     print("----------------------------------------")
+
+    print(
+        "Image shape:",
+        image_gray.shape
+    )
 
     single_region_size = max(
         image_gray.shape
@@ -167,12 +150,8 @@ def main():
     )
 
     single_difference = np.abs(
-        local_single_region.astype(
-            np.int16
-        )
-        - global_image.astype(
-            np.int16
-        )
+        local_single_region.astype(np.int16)
+        - global_image.astype(np.int16)
     )
 
     print(
@@ -188,11 +167,6 @@ def main():
         "la ecualizacion global: OK"
     )
 
-    print()
-    print("----------------------------------------")
-    print("Ecualizacion local no limitada")
-    print("----------------------------------------")
-
     region_size = 64
 
     local_step_equal_size = (
@@ -204,11 +178,6 @@ def main():
         )
     )
 
-    print(
-        "region_size=64, "
-        "region_step=64: OK"
-    )
-
     local_overlap_50 = (
         local_histogram_equalization(
             image_gray,
@@ -218,9 +187,36 @@ def main():
         )
     )
 
+    difference_step_equal = np.abs(
+        local_step_equal_size.astype(np.int16)
+        - image_gray.astype(np.int16)
+    )
+
+    difference_overlap = np.abs(
+        local_overlap_50.astype(np.int16)
+        - image_gray.astype(np.int16)
+    )
+
+    print()
     print(
         "region_size=64, "
-        "region_step=32: OK"
+        "region_step=64"
+    )
+
+    print(
+        "Mean difference from original:",
+        f"{difference_step_equal.mean():.3f}"
+    )
+
+    print()
+    print(
+        "region_size=64, "
+        "region_step=32"
+    )
+
+    print(
+        "Mean difference from original:",
+        f"{difference_overlap.mean():.3f}"
     )
 
     figure, axes = plt.subplots(
@@ -267,11 +263,15 @@ def main():
     for axis in axes:
         axis.axis("off")
 
+    figure.suptitle(
+        image_name
+    )
+
     figure.tight_layout()
 
     output_path = (
         output_directory
-        / "local_unlimited_basic.png"
+        / f"local_unlimited_{image_name}.png"
     )
 
     figure.savefig(
@@ -282,17 +282,74 @@ def main():
 
     plt.close(figure)
 
-    print()
     print(
         "Resultado guardado en:",
         output_path
     )
 
+
+def main():
+    project_directory = (
+        Path(__file__)
+        .resolve()
+        .parents[1]
+    )
+
+    output_directory = (
+        project_directory
+        / "results"
+        / "pregunta2"
+        / "local_unlimited"
+    )
+
+    output_directory.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    test_region_weights()
+    test_uniform_image()
+
+    image_configurations = [
+        {
+            "name": "profesor",
+            "path": (
+                project_directory
+                / "images"
+                / "profesor"
+                / "pregunta2.tif"
+            )
+        },
+        {
+            "name": "fruit",
+            "path": (
+                project_directory
+                / "images"
+                / "propias"
+                / "fruit.jpg"
+            )
+        }
+    ]
+
+    for current_image in image_configurations:
+
+        run_local_experiment(
+            image_path=current_image[
+                "path"
+            ],
+            image_name=current_image[
+                "name"
+            ],
+            output_directory=output_directory
+        )
+
     print()
+    print("----------------------------------------")
     print(
         "Todos los tests terminaron "
         "correctamente."
     )
+    print("----------------------------------------")
 
 
 if __name__ == "__main__":

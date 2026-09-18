@@ -9,32 +9,11 @@ from src.pregunta2 import (
 )
 
 
-def main():
-    project_directory = (
-        Path(__file__)
-        .resolve()
-        .parents[1]
-    )
-
-    image_path = (
-        project_directory
-        / "images"
-        / "propias"
-        / "fruit.jpg"
-    )
-
-    output_directory = (
-        project_directory
-        / "results"
-        / "pregunta2"
-        / "contrast_control"
-    )
-
-    output_directory.mkdir(
-        parents=True,
-        exist_ok=True
-    )
-
+def run_contrast_experiment(
+    image_path,
+    image_name,
+    output_directory
+):
     image_gray = cv2.imread(
         str(image_path),
         cv2.IMREAD_GRAYSCALE
@@ -59,9 +38,17 @@ def main():
 
     output_images = []
 
+    print()
     print("----------------------------------------")
-    print("Control de contraste")
+    print(
+        f"Control de contraste: {image_name}"
+    )
     print("----------------------------------------")
+
+    print(
+        "Image shape:",
+        image_gray.shape
+    )
 
     for contrast_strength in (
         contrast_strength_values
@@ -90,11 +77,16 @@ def main():
             difference.mean()
         )
 
+        maximum_difference = (
+            difference.max()
+        )
+
         print(
-            f"contrast_strength="
-            f"{contrast_strength:.2f}"
+            f"alpha={contrast_strength:.2f}"
             f" | mean difference="
             f"{mean_difference:.3f}"
+            f" | max difference="
+            f"{maximum_difference}"
         )
 
     # alpha=0 debe ser identidad
@@ -105,10 +97,9 @@ def main():
 
     assert identity_difference.max() == 0
 
-    print()
     print(
-        "contrast_strength=0 "
-        "mantiene la imagen original: OK"
+        "alpha=0 mantiene "
+        "la imagen original: OK"
     )
 
     unlimited_reference = (
@@ -116,7 +107,8 @@ def main():
             image_gray,
             region_size=region_size,
             region_step=region_step,
-            num_bins=num_bins
+            num_bins=num_bins,
+            contrast_strength=1.0
         )
     )
 
@@ -128,8 +120,8 @@ def main():
     assert unlimited_difference.max() == 0
 
     print(
-        "contrast_strength=1 "
-        "reproduce el metodo no limitado: OK"
+        "alpha=1 reproduce "
+        "el metodo no limitado: OK"
     )
 
     figure, axes = plt.subplots(
@@ -178,6 +170,7 @@ def main():
 
     figure.suptitle(
         (
+            f"{image_name} | "
             f"region_size={region_size}, "
             f"region_step={region_step}, "
             f"num_bins={num_bins}"
@@ -188,7 +181,7 @@ def main():
 
     output_path = (
         output_directory
-        / "contrast_strength_comparison.png"
+        / f"contrast_strength_{image_name}.png"
     )
 
     figure.savefig(
@@ -199,11 +192,71 @@ def main():
 
     plt.close(figure)
 
-    print()
     print(
         "Resultado guardado en:",
         output_path
     )
+
+
+def main():
+    project_directory = (
+        Path(__file__)
+        .resolve()
+        .parents[1]
+    )
+
+    output_directory = (
+        project_directory
+        / "results"
+        / "pregunta2"
+        / "contrast_control"
+    )
+
+    output_directory.mkdir(
+        parents=True,
+        exist_ok=True
+    )
+
+    image_configurations = [
+        {
+            "name": "profesor",
+            "path": (
+                project_directory
+                / "images"
+                / "profesor"
+                / "pregunta2.tif"
+            )
+        },
+        {
+            "name": "fruit",
+            "path": (
+                project_directory
+                / "images"
+                / "propias"
+                / "fruit.jpg"
+            )
+        }
+    ]
+
+    for current_image in image_configurations:
+
+        run_contrast_experiment(
+            image_path=current_image[
+                "path"
+            ],
+            image_name=current_image[
+                "name"
+            ],
+            output_directory=output_directory
+        )
+
+    print()
+    print("----------------------------------------")
+    print(
+        "Experimentos de control "
+        "terminados correctamente."
+    )
+    print("----------------------------------------")
 
 
 if __name__ == "__main__":
