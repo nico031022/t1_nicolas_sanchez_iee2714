@@ -17,6 +17,27 @@ def calculate_output_size(image_shape, scale_factor):
 
     return output_height, output_width
 
+def map_output_coordinate(
+    output_coordinate,
+    input_size,
+    output_size,
+):
+
+    scale = output_size / input_size
+
+    input_coordinate = (
+        (output_coordinate + 0.5) / scale
+        - 0.5
+    )
+
+    input_coordinate = np.clip(
+        input_coordinate,
+        0.0,
+        input_size - 1,
+    )
+
+    return input_coordinate
+
 
 def map_output_to_input(
     output_row,
@@ -31,23 +52,16 @@ def map_output_to_input(
     output_height = output_shape[0]
     output_width = output_shape[1]
 
-    scale_y = output_height / input_height
-    scale_x = output_width / input_width
-
-    input_row = (output_row + 0.5) / scale_y - 0.5
-    input_col = (output_col + 0.5) / scale_x - 0.5
-
-    # dejar la coordenada dentro de image
-    input_row = np.clip(
-        input_row,
-        0.0,
-        input_height - 1,
+    input_row = map_output_coordinate(
+        output_row,
+        input_height,
+        output_height,
     )
 
-    input_col = np.clip(
-        input_col,
-        0.0,
-        input_width - 1,
+    input_col = map_output_coordinate(
+        output_col,
+        input_width,
+        output_width,
     )
 
     return input_row, input_col
@@ -61,7 +75,7 @@ def nearest_neighbor_value(
     input_height = image.shape[0]
     input_width = image.shape[1]
 
-    # buscamos el vecino mas cercano
+    # buscar el vecino mas cercano
     nearest_row = int(np.floor(input_row + 0.5))
     nearest_col = int(np.floor(input_col + 0.5))
 
@@ -95,7 +109,7 @@ def bilinear_value(
     input_height = image.shape[0]
     input_width = image.shape[1]
 
-    # buscamos los cuatro vecinos
+    # buscar los cuatro vecinos
     top_row = int(np.floor(input_row))
     left_col = int(np.floor(input_col))
 
@@ -134,24 +148,24 @@ def bilinear_value(
     )
 
     top_left = image[
-        top_row,
-        left_col,
-    ].astype(np.float64)
+    top_row,
+    left_col,
+    ]
 
     top_right = image[
         top_row,
         right_col,
-    ].astype(np.float64)
+    ]
 
     bottom_left = image[
         bottom_row,
         left_col,
-    ].astype(np.float64)
+    ]
 
     bottom_right = image[
         bottom_row,
         right_col,
-    ].astype(np.float64)
+    ]
 
     pixel_value = (
         weight_top_left * top_left
@@ -212,6 +226,39 @@ def resize_image(
         output_height,
         output_width,
     )
+
+    input_height = input_shape[0]
+    input_width = input_shape[1]
+
+    mapped_rows = np.zeros(
+        output_height,
+        dtype=np.float64,
+    )
+
+    mapped_cols = np.zeros(
+        output_width,
+        dtype=np.float64,
+    )
+
+    for output_row in range(output_height):
+
+        mapped_rows[output_row] = map_output_coordinate(
+            output_row,
+            input_height,
+            output_height,
+        )
+
+    for output_col in range(output_width):
+
+        mapped_cols[output_col] = map_output_coordinate(
+            output_col,
+            input_width,
+            output_width,
+        )
+
+
+
+    
 
     for output_row in range(output_height):
         for output_col in range(output_width):
