@@ -86,6 +86,87 @@ def nearest_neighbor_value(
     return pixel_value
 
 
+def bilinear_value(
+    image,
+    input_row,
+    input_col,
+):
+
+    input_height = image.shape[0]
+    input_width = image.shape[1]
+
+    # buscamos los cuatro vecinos
+    top_row = int(np.floor(input_row))
+    left_col = int(np.floor(input_col))
+
+    bottom_row = min(
+        top_row + 1,
+        input_height - 1,
+    )
+
+    right_col = min(
+        left_col + 1,
+        input_width - 1,
+    )
+
+    row_distance = input_row - top_row
+    col_distance = input_col - left_col
+
+    # calcular pesos
+    weight_top_left = (
+        (1.0 - row_distance)
+        * (1.0 - col_distance)
+    )
+
+    weight_top_right = (
+        (1.0 - row_distance)
+        * col_distance
+    )
+
+    weight_bottom_left = (
+        row_distance
+        * (1.0 - col_distance)
+    )
+
+    weight_bottom_right = (
+        row_distance
+        * col_distance
+    )
+
+    top_left = image[
+        top_row,
+        left_col,
+    ].astype(np.float64)
+
+    top_right = image[
+        top_row,
+        right_col,
+    ].astype(np.float64)
+
+    bottom_left = image[
+        bottom_row,
+        left_col,
+    ].astype(np.float64)
+
+    bottom_right = image[
+        bottom_row,
+        right_col,
+    ].astype(np.float64)
+
+    pixel_value = (
+        weight_top_left * top_left
+        + weight_top_right * top_right
+        + weight_bottom_left * bottom_left
+        + weight_bottom_right * bottom_right
+    )
+
+    return pixel_value
+
+
+
+
+
+
 def resize_image(
     image,
     scale_factor,
@@ -101,6 +182,11 @@ def resize_image(
     else:
         raise ValueError(
             "La imagen debe ser grayscale o RGB"
+        )
+
+    if method not in ("nearest", "bilinear"):
+        raise ValueError(
+            "Metodo de interpolacion no valido"
         )
 
     output_height, output_width = calculate_output_size(
@@ -121,6 +207,7 @@ def resize_image(
         )
 
     input_shape = image.shape[:2]
+
     output_shape = (
         output_height,
         output_width,
@@ -145,9 +232,31 @@ def resize_image(
                 )
 
             else:
-                raise ValueError(
-                    "Metodo de interpolacion no valido"
+
+                pixel_value = bilinear_value(
+                    image,
+                    input_row,
+                    input_col,
                 )
+
+                if np.issubdtype(
+                    image.dtype,
+                    np.integer,
+                ):
+
+                    dtype_limits = np.iinfo(
+                        image.dtype
+                    )
+
+                    pixel_value = np.rint(
+                        pixel_value
+                    )
+
+                    pixel_value = np.clip(
+                        pixel_value,
+                        dtype_limits.min,
+                        dtype_limits.max,
+                    )
 
             output_image[
                 output_row,
