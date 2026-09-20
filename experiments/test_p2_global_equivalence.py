@@ -4,7 +4,10 @@ import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 
-from src.pregunta2 import global_equalization_own
+from src.pregunta2 import (
+    global_equalization_own,
+    local_histogram_equalization
+)
 
 
 def run_global_equivalence(
@@ -27,14 +30,19 @@ def run_global_equivalence(
         num_bins=256
     )
 
-    # solo como ref
-    equalized_opencv = cv2.equalizeHist(
-        image_gray
+    single_region_size = max(image_gray.shape)
+
+    equalized_local = local_histogram_equalization(
+        image_gray,
+        region_size=single_region_size,
+        region_step=single_region_size,
+        num_bins=256,
+        contrast_strength=1.0
     )
 
     difference = np.abs(
         equalized_own.astype(np.int16)
-        - equalized_opencv.astype(np.int16)
+        - equalized_local.astype(np.int16)
     )
 
     maximum_difference = (
@@ -72,6 +80,11 @@ def run_global_equivalence(
     print(
         "Image shape:",
         image_gray.shape
+    )
+
+    print(
+        "Single region size / step:",
+        single_region_size
     )
 
     print(
@@ -123,14 +136,14 @@ def run_global_equivalence(
     )
 
     axes[2].imshow(
-        equalized_opencv,
+        equalized_local,
         cmap="gray",
         vmin=0,
         vmax=255
     )
 
     axes[2].set_title(
-        "OpenCV equalizeHist"
+        "Local con una sola region"
     )
 
     difference_plot = axes[3].imshow(
@@ -141,7 +154,7 @@ def run_global_equivalence(
     )
 
     axes[3].set_title(
-        "Diferencia absoluta"
+        f"Diferencia absoluta\nmax={maximum_difference}"
     )
 
     figure.colorbar(
@@ -153,7 +166,8 @@ def run_global_equivalence(
         axis.axis("off")
 
     figure.suptitle(
-        image_name
+        f"{image_name} | num_bins=256 | "
+        f"region_size=region_step={single_region_size} | alpha=1.0"
     )
 
     figure.tight_layout()
@@ -238,8 +252,8 @@ def main():
     print()
     print("----------------------------------------")
     print(
-        "Las dos imagenes reproducen "
-        "exactamente equalizeHist: OK"
+        "Una sola region reproduce la ecualizacion "
+        "global propia en las dos imagenes: OK"
     )
     print("----------------------------------------")
 
