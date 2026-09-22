@@ -105,6 +105,14 @@ python -m experiments.test_p3_pixel_trace
 
 Se compara una reducción seguida de una ampliación, varios reescalados frente a uno equivalente, y dos convenciones de coordenadas. El último script imprime las coordenadas, los 4 vecinos, sus pesos y el valor final de un píxel. Las figuras quedan en las subcarpetas de `results/pregunta3/`.
 
+Para dibujar los cuatro vecinos y la posición de entrada del píxel que aparece al final del informe:
+
+```bash
+python apoyo_visua_informe.py
+```
+
+La figura queda en `results/apoyo_informe/p3_pixel.png`.
+
 ## Pruebas básicas
 
 También se pueden ejecutar estas tests de interpolación periódica, histogramas y cobertura de la malla:
